@@ -12,6 +12,7 @@ const links = [
   { href: '/comunicazione', label: 'Comunicazione' },
   { href: '/anagrafica', label: 'Anagrafica' },
   { href: '/report', label: 'Report' },
+  { href: '/utenti', label: 'Utenti' },
 ]
 
 export default function Navbar() {
@@ -51,7 +52,10 @@ export default function Navbar() {
           <span className="text-ink/60">
             {profile?.nome} · <span className="uppercase text-xs tracking-wide">{profile?.ruolo}</span>
           </span>
-          <button onClick={handleLogout} className="text-ink/60 hover:text-danger transition-colors">
+          <button
+            onClick={handleLogout}
+            className="text-ink/60 hover:text-danger active:scale-95 transition-all"
+          >
             Esci
           </button>
         </div>

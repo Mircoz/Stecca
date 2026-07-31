@@ -2,9 +2,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/lib/toast-context'
 
 export default function NuovaCommessaPage() {
   const router = useRouter()
+  const { show } = useToast()
   const [clienti, setClienti] = useState<any[]>([])
   const [form, setForm] = useState({
     titolo: '',
@@ -42,11 +44,16 @@ export default function NuovaCommessaPage() {
       .select()
       .single()
     setSaving(false)
-    if (!error && data) router.push(`/commesse/${data.id}`)
+    if (error) {
+      show(error.message, 'error')
+      return
+    }
+    show('Commessa creata')
+    if (data) router.push(`/commesse/${data.id}`)
   }
 
   return (
-    <div className="max-w-lg space-y-6">
+    <div className="max-w-lg space-y-6 animate-fade-in-up">
       <h1 className="font-display text-3xl font-semibold">Nuova commessa</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -54,7 +61,7 @@ export default function NuovaCommessaPage() {
           placeholder="Titolo commessa"
           value={form.titolo}
           onChange={(e) => setForm({ ...form, titolo: e.target.value })}
-          className="w-full border border-line rounded-md px-3 py-2 bg-white"
+          className="w-full border border-line rounded-md px-3 py-2 bg-white transition-shadow focus:outline-none focus:ring-2 focus:ring-ochre"
         />
         <select
           value={form.cliente_id}
@@ -77,6 +84,7 @@ export default function NuovaCommessaPage() {
         <input
           type="number"
           step="0.01"
+          min="0"
           placeholder="Importo preventivo (€)"
           value={form.importo_preventivo}
           onChange={(e) => setForm({ ...form, importo_preventivo: e.target.value })}
@@ -91,7 +99,7 @@ export default function NuovaCommessaPage() {
         <button
           type="submit"
           disabled={saving}
-          className="bg-ochre hover:bg-ochre-dark text-white rounded-md px-4 py-2 font-medium transition-colors disabled:opacity-50"
+          className="bg-ochre hover:bg-ochre-dark active:scale-95 text-white rounded-md px-4 py-2 font-medium transition-all disabled:opacity-50"
         >
           {saving ? 'Creazione…' : 'Crea commessa'}
         </button>

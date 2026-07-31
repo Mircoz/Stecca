@@ -27,7 +27,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-fade-in-up">
         <h1 className="font-display text-3xl font-semibold mb-1">Stecca</h1>
         <p className="text-ink/60 mb-8 text-sm">Gestionale operativo — accedi</p>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -38,7 +38,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-line rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-ochre"
+              className="w-full border border-line rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-ochre transition-shadow"
             />
           </div>
           <div>
@@ -48,14 +48,14 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-line rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-ochre"
+              className="w-full border border-line rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-ochre transition-shadow"
             />
           </div>
           {error && <p className="text-danger text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-ochre hover:bg-ochre-dark text-white rounded-md py-2 font-medium transition-colors disabled:opacity-50"
+            className="w-full bg-ochre hover:bg-ochre-dark active:scale-95 text-white rounded-md py-2 font-medium transition-all disabled:opacity-50"
           >
             {loading ? 'Accesso in corso…' : 'Accedi'}
           </button>

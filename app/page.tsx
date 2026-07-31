@@ -3,17 +3,21 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
+import { SkeletonCards, SkeletonList } from '@/components/ui/Skeleton'
+import StatusPill from '@/components/StatusPill'
 
 export default function DashboardPage() {
   const { profile } = useAuth()
   const [commesseAperte, setCommesseAperte] = useState<any[]>([])
   const [saldo, setSaldo] = useState<number | null>(null)
   const [prossimiEventi, setProssimiEventi] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
 
     async function load() {
+      setLoading(true)
       const { data: commesse } = await supabase
         .from('commesse')
         .select('id, titolo, stato, fase, data_evento')
@@ -39,50 +43,65 @@ export default function DashboardPage() {
         .order('data_pianificata', { ascending: true })
         .limit(5)
       setProssimiEventi(eventi ?? [])
+      setLoading(false)
     }
     load()
   }, [])
 
   return (
     <div className="space-y-10">
-      <div>
+      <div className="animate-fade-in-up">
         <h1 className="font-display text-3xl font-semibold">
           Ciao{profile ? `, ${profile.nome.split(' ')[0]}` : ''}
         </h1>
         <p className="text-ink/60 mt-1">Panoramica delle attività della Stecca.</p>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div className="border border-line rounded-lg p-5 bg-white/50">
-          <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Saldo prima nota</p>
-          <p className="font-display text-2xl">{saldo === null ? '—' : `€ ${saldo.toFixed(2)}`}</p>
+      {loading ? (
+        <SkeletonCards />
+      ) : (
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="animate-fade-in-up border border-line rounded-lg p-5 bg-white/50 transition-shadow hover:shadow-sm">
+            <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Saldo prima nota</p>
+            <p className="font-display text-2xl">{saldo === null ? '—' : `€ ${saldo.toFixed(2)}`}</p>
+          </div>
+          <div
+            className="animate-fade-in-up border border-line rounded-lg p-5 bg-white/50 transition-shadow hover:shadow-sm"
+            style={{ animationDelay: '60ms' }}
+          >
+            <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Commesse aperte</p>
+            <p className="font-display text-2xl">{commesseAperte.length}</p>
+          </div>
+          <div
+            className="animate-fade-in-up border border-line rounded-lg p-5 bg-white/50 transition-shadow hover:shadow-sm"
+            style={{ animationDelay: '120ms' }}
+          >
+            <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Prossimi eventi</p>
+            <p className="font-display text-2xl">{prossimiEventi.length}</p>
+          </div>
         </div>
-        <div className="border border-line rounded-lg p-5 bg-white/50">
-          <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Commesse aperte</p>
-          <p className="font-display text-2xl">{commesseAperte.length}</p>
-        </div>
-        <div className="border border-line rounded-lg p-5 bg-white/50">
-          <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Prossimi eventi</p>
-          <p className="font-display text-2xl">{prossimiEventi.length}</p>
-        </div>
-      </div>
+      )}
 
       <div>
         <h2 className="font-display text-xl font-semibold mb-3">Commesse aperte</h2>
-        {commesseAperte.length === 0 ? (
+        {loading ? (
+          <SkeletonList rows={3} />
+        ) : commesseAperte.length === 0 ? (
           <p className="text-ink/50 text-sm">Nessuna commessa aperta al momento.</p>
         ) : (
-          <div className="border border-line rounded-lg divide-y divide-line bg-white/50">
-            {commesseAperte.map((c) => (
+          <div className="border border-line rounded-lg divide-y divide-line bg-white/50 overflow-hidden">
+            {commesseAperte.map((c, i) => (
               <Link
                 key={c.id}
                 href={`/commesse/${c.id}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-bg transition-colors"
+                className="animate-fade-in-up flex items-center justify-between px-4 py-3 hover:bg-bg transition-colors"
+                style={{ animationDelay: `${i * 40}ms` }}
               >
                 <span>{c.titolo}</span>
-                <span className="text-xs uppercase tracking-wide text-ink/50">
-                  {c.stato} · {c.fase}
-                </span>
+                <div className="flex items-center gap-2">
+                  <StatusPill value={c.stato} />
+                  <StatusPill value={c.fase} />
+                </div>
               </Link>
             ))}
           </div>

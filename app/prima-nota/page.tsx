@@ -1,21 +1,27 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/lib/toast-context'
+import { SkeletonList } from '@/components/ui/Skeleton'
 
 const CATEGORIE = ['utenze', 'manutenzione', 'personale', 'consulenti', 'forniture', 'altro']
 
 export default function PrimaNotaPage() {
+  const { show } = useToast()
   const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ tipo: 'out', importo: '', categoria: 'altro', descrizione: '' })
   const [saving, setSaving] = useState(false)
 
   async function load() {
     const supabase = createClient()
+    setLoading(true)
     const { data } = await supabase
       .from('prima_nota')
       .select('*, commesse(titolo)')
       .order('data_movimento', { ascending: false })
     setItems(data ?? [])
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -26,15 +32,20 @@ export default function PrimaNotaPage() {
     e.preventDefault()
     setSaving(true)
     const supabase = createClient()
-    await supabase.from('prima_nota').insert({
+    const { error } = await supabase.from('prima_nota').insert({
       tipo: form.tipo,
       importo: Number(form.importo),
       categoria: form.categoria,
       descrizione: form.descrizione,
       commessa_id: null,
     })
-    setForm({ tipo: 'out', importo: '', categoria: 'altro', descrizione: '' })
     setSaving(false)
+    if (error) {
+      show(error.message, 'error')
+      return
+    }
+    show('Movimento registrato')
+    setForm({ tipo: 'out', importo: '', categoria: 'altro', descrizione: '' })
     load()
   }
 
@@ -42,14 +53,18 @@ export default function PrimaNotaPage() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="animate-fade-in-up">
         <h1 className="font-display text-3xl font-semibold">Prima nota</h1>
         <p className="text-ink/60 mt-1">
-          Registro entrate/uscite — saldo attuale: <span className="font-medium text-ink">€ {saldo.toFixed(2)}</span>
+          Registro entrate/uscite — saldo attuale:{' '}
+          <span className={`font-medium ${saldo >= 0 ? 'text-teal' : 'text-danger'}`}>€ {saldo.toFixed(2)}</span>
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="border border-line rounded-lg p-5 bg-white/50 grid sm:grid-cols-4 gap-3">
+      <form
+        onSubmit={handleSubmit}
+        className="animate-fade-in-up border border-line rounded-lg p-5 bg-white/50 grid sm:grid-cols-4 gap-3"
+      >
         <select
           value={form.tipo}
           onChange={(e) => setForm({ ...form, tipo: e.target.value })}
@@ -62,6 +77,7 @@ export default function PrimaNotaPage() {
           required
           type="number"
           step="0.01"
+          min="0"
           placeholder="Importo"
           value={form.importo}
           onChange={(e) => setForm({ ...form, importo: e.target.value })}
@@ -87,7 +103,7 @@ export default function PrimaNotaPage() {
         <button
           type="submit"
           disabled={saving}
-          className="sm:col-span-4 bg-ochre hover:bg-ochre-dark text-white rounded-md py-2 text-sm font-medium disabled:opacity-50"
+          className="sm:col-span-4 bg-ochre hover:bg-ochre-dark active:scale-95 text-white rounded-md py-2 text-sm font-medium transition-all disabled:opacity-50"
         >
           {saving ? 'Salvataggio…' : 'Registra movimento generale'}
         </button>
@@ -96,22 +112,32 @@ export default function PrimaNotaPage() {
         Per movimenti legati a una commessa specifica, usa la scheda della commessa.
       </p>
 
-      <div className="border border-line rounded-lg divide-y divide-line bg-white/50">
-        {items.map((m) => (
-          <div key={m.id} className="flex items-center justify-between px-4 py-2 text-sm">
-            <div>
-              <span>{m.descrizione || '—'}</span>
-              <span className="text-ink/40 ml-2 text-xs">
-                {m.commesse?.titolo ? `· ${m.commesse.titolo}` : m.categoria ? `· ${m.categoria}` : ''}
+      {loading ? (
+        <SkeletonList rows={4} />
+      ) : (
+        <div className="border border-line rounded-lg divide-y divide-line bg-white/50 overflow-hidden">
+          {items.map((m, i) => (
+            <div
+              key={m.id}
+              className="animate-fade-in-up flex items-center justify-between px-4 py-2 text-sm"
+              style={{ animationDelay: `${i * 25}ms` }}
+            >
+              <div>
+                <span>{m.descrizione || '—'}</span>
+                <span className="text-ink/40 ml-2 text-xs">
+                  {m.commesse?.titolo ? `· ${m.commesse.titolo}` : m.categoria ? `· ${m.categoria}` : ''}
+                </span>
+              </div>
+              <span className={m.tipo === 'in' ? 'text-teal font-medium' : 'text-danger font-medium'}>
+                {m.tipo === 'in' ? '+' : '-'}€ {Number(m.importo).toFixed(2)}
               </span>
             </div>
-            <span className={m.tipo === 'in' ? 'text-teal' : 'text-danger'}>
-              {m.tipo === 'in' ? '+' : '-'}€ {Number(m.importo).toFixed(2)}
-            </span>
-          </div>
-        ))}
-        {items.length === 0 && <p className="px-4 py-6 text-sm text-ink/50">Nessun movimento ancora.</p>}
-      </div>
+          ))}
+          {items.length === 0 && (
+            <p className="px-4 py-8 text-sm text-ink/50 text-center">Nessun movimento ancora.</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
