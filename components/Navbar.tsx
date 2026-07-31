@@ -9,6 +9,7 @@ const links = [
   { href: '/commesse', label: 'Commesse' },
   { href: '/prima-nota', label: 'Prima nota' },
   { href: '/planning', label: 'Planning' },
+  { href: '/comunicazione', label: 'Comunicazione' },
   { href: '/anagrafica', label: 'Anagrafica' },
   { href: '/report', label: 'Report' },
 ]

@@ -1,13 +1,23 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Il middleware è solo una comodità UX (redirect automatico a /login).
+// La sicurezza reale è applicata dal database (Row Level Security in Supabase),
+// quindi qui non deve mai bloccare la richiesta con un 500: se qualcosa va
+// storto (env var mancanti, errore di rete verso Supabase, ecc.) lasciamo
+// semplicemente passare la richiesta.
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request })
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.next()
+    }
+
+    let response = NextResponse.next({ request })
+
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -20,28 +30,32 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
+    })
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const isLoginPage = request.nextUrl.pathname.startsWith('/login')
+
+    if (!user && !isLoginPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
     }
-  )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    if (user && isLoginPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
 
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
-
-  if (!user && !isLoginPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return response
+  } catch {
+    // In caso di errore imprevisto, non blocchiamo l'utente: la pagina/app
+    // gestirà comunque l'autenticazione lato client (AuthProvider).
+    return NextResponse.next()
   }
-
-  if (user && isLoginPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
-  }
-
-  return response
 }
 
 export const config = {
